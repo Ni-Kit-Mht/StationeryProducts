@@ -120,7 +120,8 @@
         const db = firebase.firestore();
 
         // Handle form submission
-        document.getElementById('productForm').addEventListener('submit', async function (e) {
+ // Handle form submission
+document.getElementById('productForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
     // Retrieve input values
@@ -145,7 +146,10 @@
     reader.onload = async function (event) {
         const imageDataUrl = event.target.result; // Get the image as a data URL
 
-        // Add product details along with the image data URL to Firestore
+        // Resize the image using canvas
+        const resizedImageUrl = await resizeImage(imageDataUrl, 100); // Resize to 100px width
+
+        // Add product details along with the resized image data URL to Firestore
         await db.collection('products').add({
             productName,
             itemCount,
@@ -153,7 +157,7 @@
             itemPricePerPiece,
             totalPrice,
             storageLocation,
-            productImage: imageDataUrl, // Save the image as a data URL in the database
+            productImage: resizedImageUrl, // Save the resized image as a data URL in the database
             createdAt: new Date()
         });
 
@@ -168,6 +172,34 @@
         alert('Please upload a product image.');
     }
 });
+
+// Function to resize image
+function resizeImage(dataUrl, newWidth) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate new height to maintain aspect ratio
+            const aspectRatio = img.height / img.width;
+            const newHeight = newWidth * aspectRatio;
+
+            // Set canvas size
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Draw the image on canvas
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+            // Convert canvas to data URL
+            const resizedDataUrl = canvas.toDataURL('image/jpeg');
+            resolve(resizedDataUrl); // Resolve the promise with the resized image
+        };
+    });
+}
+
 
 // Load products from Firestore and display them in the table
 async function loadProducts(searchTerm = '') {
